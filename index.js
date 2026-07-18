@@ -13,67 +13,115 @@ const wss = new WebSocket.Server({
     path: "/ws"
 });
 
+
 let adminClients = [];
 let robloxServers = [];
 
+
 console.log("Serveur prêt.");
 
-wss.on("connection", (ws) => {
+
+function sendRobloxStatus()
+{
+    const status = {
+        type: "roblox_status",
+        connected: robloxServers.length > 0
+    };
+
+
+    adminClients.forEach(client =>
+    {
+        if(client.readyState === WebSocket.OPEN)
+        {
+            client.send(JSON.stringify(status));
+        }
+    });
+}
+
+
+
+wss.on("connection", (ws) =>
+{
 
     console.log("Nouvelle connexion.");
 
-    ws.on("message", (message) => {
+    ws.on("message", (message) =>
+    {
 
-        try {
+        try
+        {
 
             const data = JSON.parse(message);
 
-            if (data.type === "register") {
 
-                if (data.client === "admin") {
+            if(data.type === "register")
+            {
+
+                if(data.client === "admin")
+                {
 
                     adminClients.push(ws);
 
                     console.log("Application Windows connectée.");
 
+                    sendRobloxStatus();
+
                 }
 
-                else if (data.client === "roblox") {
+
+                if(data.client === "roblox")
+                {
 
                     robloxServers.push(ws);
 
                     console.log("Serveur Roblox connecté.");
 
+                    sendRobloxStatus();
+
                 }
 
+
                 ws.send(JSON.stringify({
-                    type: "registered"
+                    type:"registered"
                 }));
 
             }
 
-        }
-        catch (err) {
-
-            console.log(err);
 
         }
+        catch(error)
+        {
+            console.log("Erreur message :", error);
+        }
+
 
     });
 
-    ws.on("close", () => {
+
+
+    ws.on("close", () =>
+    {
 
         adminClients = adminClients.filter(x => x !== ws);
+
         robloxServers = robloxServers.filter(x => x !== ws);
+
 
         console.log("Client déconnecté.");
 
+        sendRobloxStatus();
+
     });
+
+
 
 });
 
-server.listen(PORT, () => {
 
-    console.log(`Serveur lancé sur le port ${PORT}`);
 
+server.listen(PORT, () =>
+{
+    console.log(
+        "Serveur lancé sur le port " + PORT
+    );
 });
