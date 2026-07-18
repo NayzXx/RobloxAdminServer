@@ -4,23 +4,22 @@ const WebSocket = require("ws");
 const PORT = process.env.PORT || 3000;
 
 
-// =========================
-// Stockage des connexions
-// =========================
+// ===============================
+// Clients connectés
+// ===============================
 
 let adminClients = [];
-
 let robloxServers = {};
 
 
 
-// =========================
-// Serveur HTTP
-// =========================
+// ===============================
+// HTTP Server
+// ===============================
 
 const server = http.createServer((req, res) => {
 
-    // Test navigateur
+
     if(req.url === "/")
     {
         res.writeHead(200);
@@ -30,11 +29,18 @@ const server = http.createServer((req, res) => {
 
 
 
+    // ===============================
     // Roblox Register
+    // ===============================
+
     if(req.url === "/roblox/register" && req.method === "POST")
     {
 
+        console.log("ROBLOX REGISTER RECU");
+
+
         let body = "";
+
 
         req.on("data", chunk =>
         {
@@ -42,8 +48,10 @@ const server = http.createServer((req, res) => {
         });
 
 
+
         req.on("end", () =>
         {
+
             try
             {
 
@@ -67,6 +75,7 @@ const server = http.createServer((req, res) => {
                 sendRobloxStatus();
 
 
+
                 res.writeHead(200);
                 res.end(JSON.stringify({
                     success:true
@@ -75,6 +84,8 @@ const server = http.createServer((req, res) => {
             }
             catch(error)
             {
+                console.log(error);
+
                 res.writeHead(400);
                 res.end();
             }
@@ -83,15 +94,22 @@ const server = http.createServer((req, res) => {
 
 
         return;
+
     }
 
 
 
 
 
+    // ===============================
     // Roblox Heartbeat
+    // ===============================
+
     if(req.url === "/roblox/heartbeat" && req.method === "POST")
     {
+
+        console.log("ROBLOX HEARTBEAT RECU");
+
 
         let body = "";
 
@@ -112,18 +130,23 @@ const server = http.createServer((req, res) => {
                 const data = JSON.parse(body);
 
 
+
                 if(robloxServers[data.jobId])
                 {
-                    robloxServers[data.jobId].lastHeartbeat =
-                        Date.now();
-
 
                     robloxServers[data.jobId].players =
                         data.players;
+
+
+                    robloxServers[data.jobId].lastHeartbeat =
+                        Date.now();
+
                 }
 
 
+
                 res.writeHead(200);
+
                 res.end(JSON.stringify({
                     success:true
                 }));
@@ -135,12 +158,13 @@ const server = http.createServer((req, res) => {
                 res.end();
             }
 
-
         });
 
 
         return;
+
     }
+
 
 
 
@@ -152,9 +176,10 @@ const server = http.createServer((req, res) => {
 
 
 
-// =========================
+
+// ===============================
 // WebSocket Windows
-// =========================
+// ===============================
 
 const wss = new WebSocket.Server({
     server,
@@ -167,8 +192,9 @@ wss.on("connection", ws =>
 {
 
     console.log(
-        "Application connectée."
+        "Connexion WebSocket reçue"
     );
+
 
 
     ws.on("message", message =>
@@ -181,19 +207,27 @@ wss.on("connection", ws =>
                 JSON.parse(message);
 
 
-            if(data.type === "register"
-            && data.client === "admin")
+
+            if(
+                data.type === "register" &&
+                data.client === "admin"
+            )
             {
 
                 adminClients.push(ws);
 
 
                 console.log(
-                    "Admin enregistré."
+                    "Application Admin connectée"
                 );
 
 
                 sendRobloxStatus();
+
+
+                ws.send(JSON.stringify({
+                    type:"registered"
+                }));
 
             }
 
@@ -201,10 +235,14 @@ wss.on("connection", ws =>
         }
         catch(error)
         {
-            console.log(error);
+            console.log(
+                "Erreur websocket:",
+                error
+            );
         }
 
     });
+
 
 
 
@@ -213,8 +251,13 @@ wss.on("connection", ws =>
 
         adminClients =
             adminClients.filter(
-                x => x !== ws
+                client => client !== ws
             );
+
+
+        console.log(
+            "Application déconnectée"
+        );
 
     });
 
@@ -223,15 +266,24 @@ wss.on("connection", ws =>
 
 
 
-// =========================
+
+
+// ===============================
 // Statut Roblox
-// =========================
+// ===============================
 
 function sendRobloxStatus()
 {
 
     const connected =
         Object.keys(robloxServers).length > 0;
+
+
+
+    console.log(
+        "Statut Roblox :",
+        connected
+    );
 
 
 
@@ -261,7 +313,12 @@ function sendRobloxStatus()
 
 
 
-// Nettoyage des serveurs Roblox morts
+
+
+
+// ===============================
+// Nettoyage
+// ===============================
 
 setInterval(() =>
 {
@@ -272,18 +329,21 @@ setInterval(() =>
     for(const id in robloxServers)
     {
 
-        if(now -
-        robloxServers[id].lastHeartbeat
-        > 30000)
+        if(
+            now -
+            robloxServers[id].lastHeartbeat
+            >
+            30000
+        )
         {
 
-            delete robloxServers[id];
-
-
             console.log(
-                "Serveur Roblox retiré :",
+                "Serveur Roblox supprimé :",
                 id
             );
+
+
+            delete robloxServers[id];
 
         }
 
@@ -301,9 +361,7 @@ setInterval(() =>
 
 server.listen(PORT, () =>
 {
-
     console.log(
-        "Serveur lancé sur le port " + PORT
+        "Serveur lancé sur port " + PORT
     );
-
 });
