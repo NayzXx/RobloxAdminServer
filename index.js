@@ -19,6 +19,11 @@ let robloxServers = {};
 
 const server = http.createServer((req, res) => {
 
+console.log(
+    "Requête reçue :",
+    req.method,
+    req.url
+);
 
     if(req.url === "/")
     {
