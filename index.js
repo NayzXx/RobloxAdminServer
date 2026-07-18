@@ -20,7 +20,7 @@ let commands = {};
 // SERVEUR HTTP
 // ==========================
 
-const server = http.createServer((req, res) =>
+const server = http.createServer((req,res)=>
 {
 
     console.log(
@@ -42,6 +42,8 @@ const server = http.createServer((req, res) =>
 
 
 
+
+
     // ==========================
     // ROBLOX REGISTER
     // ==========================
@@ -55,14 +57,14 @@ const server = http.createServer((req, res) =>
         let body = "";
 
 
-        req.on("data", chunk =>
+        req.on("data",chunk =>
         {
             body += chunk;
         });
 
 
 
-        req.on("end", () =>
+        req.on("end",() =>
         {
 
             let data =
@@ -118,6 +120,7 @@ const server = http.createServer((req, res) =>
 
 
 
+
     // ==========================
     // ROBLOX HEARTBEAT
     // ==========================
@@ -131,14 +134,14 @@ const server = http.createServer((req, res) =>
         let body = "";
 
 
-        req.on("data", chunk =>
+        req.on("data",chunk =>
         {
             body += chunk;
         });
 
 
 
-        req.on("end", () =>
+        req.on("end",() =>
         {
 
             let data =
@@ -158,7 +161,6 @@ const server = http.createServer((req, res) =>
 
 
 
-
             if(
                 robloxServers[data.jobId]
             )
@@ -166,7 +168,6 @@ const server = http.createServer((req, res) =>
 
                 robloxServers[data.jobId].players =
                     data.players || [];
-
 
 
                 robloxServers[data.jobId].lastHeartbeat =
@@ -250,7 +251,9 @@ const server = http.createServer((req, res) =>
 
     res.end();
 
+
 });
+
 
 
 
@@ -271,8 +274,10 @@ const wss =
 
 
 
-wss.on("connection", ws =>
+
+wss.on("connection",ws =>
 {
+
 
     console.log(
         "Windows connecté"
@@ -280,10 +285,12 @@ wss.on("connection", ws =>
 
 
 
-    ws.on("message", message =>
+    ws.on("message",message =>
     {
 
+
         let data;
+
 
 
         try
@@ -305,8 +312,9 @@ wss.on("connection", ws =>
 
 
 
+
         // ======================
-        // ENREGISTREMENT ADMIN
+        // REGISTER ADMIN
         // ======================
 
 
@@ -337,8 +345,9 @@ wss.on("connection", ws =>
 
 
 
+
         // ======================
-        // ATTACH
+        // ATTACH JOUEUR
         // ======================
 
 
@@ -364,7 +373,6 @@ wss.on("connection", ws =>
             )
             {
 
-
                 let players =
                     robloxServers[id].players || [];
 
@@ -373,9 +381,9 @@ wss.on("connection", ws =>
                 let found =
                     players.some(
                         player =>
-                            player.toLowerCase()
-                            ===
-                            data.username.toLowerCase()
+                        player.toLowerCase()
+                        ===
+                        data.username.toLowerCase()
                     );
 
 
@@ -395,7 +403,6 @@ wss.on("connection", ws =>
 
 
 
-
             if(foundServer)
             {
 
@@ -407,13 +414,11 @@ wss.on("connection", ws =>
 
 
 
-
                 commands[foundServer].push(
                 {
                     type:"attach",
                     username:data.username
                 });
-
 
 
 
@@ -426,10 +431,135 @@ wss.on("connection", ws =>
                 );
 
 
-
                 console.log(
                     "Attach réussi :",
                     foundServer
+                );
+
+
+            }
+            else
+            {
+
+                ws.send(
+                    JSON.stringify(
+                    {
+                        type:"attach_failed"
+                    })
+                );
+
+
+                console.log(
+                    "Joueur introuvable"
+                );
+
+            }
+
+
+            return;
+
+        }
+
+
+
+
+
+
+
+
+
+        // ======================
+        // COMMANDES ADMIN
+        // ======================
+
+
+        if(
+            data.type === "command"
+        )
+        {
+
+
+            console.log(
+                "Commande reçue :",
+                data.action,
+                "Target :",
+                data.target
+            );
+
+
+
+            let targetServer = null;
+
+
+
+            for(
+                let id in robloxServers
+            )
+            {
+
+
+                let players =
+                    robloxServers[id].players || [];
+
+
+
+                let found =
+                    players.some(
+                        player =>
+                        player.toLowerCase()
+                        ===
+                        data.target.toLowerCase()
+                    );
+
+
+
+                if(found)
+                {
+
+                    targetServer = id;
+
+                    break;
+
+                }
+
+            }
+
+
+
+
+
+            if(targetServer)
+            {
+
+
+                if(!commands[targetServer])
+                {
+                    commands[targetServer] = [];
+                }
+
+
+
+
+                commands[targetServer].push(
+                {
+                    type:"command",
+                    action:data.action,
+                    target:data.target
+                });
+
+
+
+                ws.send(
+                    JSON.stringify(
+                    {
+                        type:"command_success"
+                    })
+                );
+
+
+
+                console.log(
+                    "Commande envoyée Roblox"
                 );
 
 
@@ -441,21 +571,23 @@ wss.on("connection", ws =>
                 ws.send(
                     JSON.stringify(
                     {
-                        type:"attach_failed"
+                        type:"command_failed"
                     })
                 );
 
 
 
                 console.log(
-                    "Joueur introuvable"
+                    "Target introuvable"
                 );
 
 
             }
 
 
+
         }
+
 
 
 
@@ -465,7 +597,9 @@ wss.on("connection", ws =>
 
 
 
-    ws.on("close", () =>
+
+
+    ws.on("close",() =>
     {
 
         adminClients =
@@ -477,7 +611,10 @@ wss.on("connection", ws =>
     });
 
 
+
 });
+
+
 
 
 
@@ -491,6 +628,7 @@ wss.on("connection", ws =>
 
 function sendRobloxStatus()
 {
+
 
     let connected =
         Object.keys(
@@ -510,6 +648,7 @@ function sendRobloxStatus()
     adminClients.forEach(client =>
     {
 
+
         if(
             client.readyState === WebSocket.OPEN
         )
@@ -524,6 +663,7 @@ function sendRobloxStatus()
 
     });
 
+
 }
 
 
@@ -532,8 +672,10 @@ function sendRobloxStatus()
 
 
 
+
+
 // ==========================
-// NETTOYAGE
+// NETTOYAGE SERVEURS
 // ==========================
 
 setInterval(() =>
@@ -582,11 +724,13 @@ setInterval(() =>
 
 
 
+
+
 // ==========================
 // START
 // ==========================
 
-server.listen(PORT, () =>
+server.listen(PORT,() =>
 {
 
     console.log(
