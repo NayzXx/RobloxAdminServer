@@ -393,49 +393,128 @@ wss.on("connection", ws =>
 
 
     ws.on("message", message =>
+{
+
+
+    const data =
+        JSON.parse(message);
+
+
+
+    // Connexion admin
+
+    if(
+        data.type === "register"
+        &&
+        data.client === "admin"
+    )
+    {
+
+        adminClients.push(ws);
+
+        console.log(
+            "Admin connecté"
+        );
+
+
+        sendRobloxStatus();
+
+        return;
+
+    }
+
+
+
+
+
+
+    // Recherche joueur
+
+    if(
+        data.type === "attach"
+    )
     {
 
 
-        const data =
-            JSON.parse(message);
+        console.log(
+            "Recherche attach :",
+            data.username
+        );
 
 
 
-        if(
-            data.type==="register"
-            &&
-            data.client==="admin"
+        let found = null;
+
+
+
+        for(
+            let id in robloxServers
         )
         {
 
 
-            adminClients.push(ws);
+            if(
+                robloxServers[id].players.includes(
+                    data.username
+                )
+            )
+            {
 
+                found = id;
+                break;
 
-            sendRobloxStatus();
+            }
+
 
         }
 
 
 
-    });
+
+        if(found)
+        {
+
+
+            commands[found] =
+                commands[found] || [];
 
 
 
-    ws.on("close",()=>{
+            commands[found].push(
+            {
+                type:"attach",
+                username:data.username
+            });
 
 
-        adminClients =
-            adminClients.filter(
-                x=>x!==ws
+
+            ws.send(
+                JSON.stringify(
+                {
+                    type:"attach_success",
+                    server:found
+                })
             );
 
 
-    });
+        }
+        else
+        {
+
+            ws.send(
+                JSON.stringify(
+                {
+                    type:"attach_failed"
+                })
+            );
+
+        }
+
+
+    }
 
 
 });
-
 
 
 
