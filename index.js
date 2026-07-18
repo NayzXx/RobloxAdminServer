@@ -145,11 +145,23 @@ const server = http.createServer((req, res) =>
 
 
 
-        req.on("end",() =>
-        {
+req.on("end",() =>
+{
 
-            let data =
-                JSON.parse(body);
+    let data =
+        JSON.parse(body);
+
+
+    console.log(
+        "Joueurs reçus :",
+        data.players
+    );
+
+
+    if(
+        robloxServers[data.jobId]
+    )
+    {
 
 
 
