@@ -16,9 +16,8 @@ let commands = {};
 
 
 
-
 // ==========================
-// HTTP SERVER
+// SERVEUR HTTP
 // ==========================
 
 const server = http.createServer((req, res) =>
@@ -31,22 +30,15 @@ const server = http.createServer((req, res) =>
     );
 
 
-
     if(req.url === "/")
     {
 
         res.writeHead(200);
-
-        res.end(
-            "Roblox Admin Server Online"
-        );
+        res.end("Roblox Admin Server Online");
 
         return;
 
     }
-
-
-
 
 
 
@@ -55,8 +47,7 @@ const server = http.createServer((req, res) =>
     // ==========================
 
     if(
-        req.url === "/roblox/register"
-        &&
+        req.url === "/roblox/register" &&
         req.method === "POST"
     )
     {
@@ -82,7 +73,7 @@ const server = http.createServer((req, res) =>
             robloxServers[data.jobId] =
             {
                 placeId:data.placeId,
-                players:data.players,
+                players:data.players || [],
                 lastHeartbeat:Date.now()
             };
 
@@ -94,13 +85,18 @@ const server = http.createServer((req, res) =>
             );
 
 
+            console.log(
+                "Joueurs :",
+                data.players
+            );
+
+
 
             sendRobloxStatus();
 
 
 
             res.writeHead(200);
-
 
             res.end(
                 JSON.stringify(
@@ -116,8 +112,6 @@ const server = http.createServer((req, res) =>
         return;
 
     }
-
-
 
 
 
@@ -129,39 +123,39 @@ const server = http.createServer((req, res) =>
     // ==========================
 
     if(
-        req.url === "/roblox/heartbeat"
-        &&
+        req.url === "/roblox/heartbeat" &&
         req.method === "POST"
     )
     {
 
-        let body="";
+        let body = "";
 
 
-        req.on("data",chunk =>
+        req.on("data", chunk =>
         {
             body += chunk;
         });
 
 
 
-req.on("end",() =>
-{
+        req.on("end", () =>
+        {
 
-    let data =
-        JSON.parse(body);
-
-
-    console.log(
-        "Joueurs reçus :",
-        data.players
-    );
+            let data =
+                JSON.parse(body);
 
 
-    if(
-        robloxServers[data.jobId]
-    )
-    {
+
+            console.log(
+                "ROBLOX HEARTBEAT RECU"
+            );
+
+
+            console.log(
+                "Joueurs reçus :",
+                data.players
+            );
+
 
 
 
@@ -171,7 +165,8 @@ req.on("end",() =>
             {
 
                 robloxServers[data.jobId].players =
-                    data.players;
+                    data.players || [];
+
 
 
                 robloxServers[data.jobId].lastHeartbeat =
@@ -182,7 +177,6 @@ req.on("end",() =>
 
 
             res.writeHead(200);
-
 
             res.end(
                 JSON.stringify(
@@ -205,14 +199,12 @@ req.on("end",() =>
 
 
 
-
     // ==========================
-    // ROBLOX COMMANDS
+    // COMMANDES ROBLOX
     // ==========================
 
     if(
-        req.url.startsWith("/roblox/commands")
-        &&
+        req.url.startsWith("/roblox/commands") &&
         req.method === "GET"
     )
     {
@@ -226,9 +218,7 @@ req.on("end",() =>
 
 
         const jobId =
-            url.searchParams.get(
-                "jobId"
-            );
+            url.searchParams.get("jobId");
 
 
 
@@ -242,7 +232,6 @@ req.on("end",() =>
 
 
         res.writeHead(200);
-
 
         res.end(
             JSON.stringify(result)
@@ -261,9 +250,7 @@ req.on("end",() =>
 
     res.end();
 
-
 });
-
 
 
 
@@ -275,7 +262,6 @@ req.on("end",() =>
 // WEBSOCKET WINDOWS
 // ==========================
 
-
 const wss =
     new WebSocket.Server(
     {
@@ -285,23 +271,17 @@ const wss =
 
 
 
-
-
 wss.on("connection", ws =>
 {
 
-
     console.log(
-        "Client WebSocket connecté"
+        "Windows connecté"
     );
-
-
 
 
 
     ws.on("message", message =>
     {
-
 
         let data;
 
@@ -325,28 +305,23 @@ wss.on("connection", ws =>
 
 
 
-
         // ======================
-        // ADMIN REGISTER
+        // ENREGISTREMENT ADMIN
         // ======================
 
 
         if(
-            data.type === "register"
-            &&
+            data.type === "register" &&
             data.client === "admin"
         )
         {
 
-
             adminClients.push(ws);
-
 
 
             console.log(
                 "Admin enregistré"
             );
-
 
 
             sendRobloxStatus();
@@ -362,9 +337,8 @@ wss.on("connection", ws =>
 
 
 
-
         // ======================
-        // ATTACH PLAYER
+        // ATTACH
         // ======================
 
 
@@ -385,8 +359,6 @@ wss.on("connection", ws =>
 
 
 
-
-
             for(
                 let id in robloxServers
             )
@@ -394,15 +366,21 @@ wss.on("connection", ws =>
 
 
                 let players =
-                    robloxServers[id].players;
+                    robloxServers[id].players || [];
 
 
 
-                if(
-                    players.includes(
-                        data.username
-                    )
-                )
+                let found =
+                    players.some(
+                        player =>
+                            player.toLowerCase()
+                            ===
+                            data.username.toLowerCase()
+                    );
+
+
+
+                if(found)
                 {
 
                     foundServer = id;
@@ -411,9 +389,7 @@ wss.on("connection", ws =>
 
                 }
 
-
             }
-
 
 
 
@@ -424,13 +400,9 @@ wss.on("connection", ws =>
             {
 
 
-                if(
-                    !commands[foundServer]
-                )
+                if(!commands[foundServer])
                 {
-
                     commands[foundServer] = [];
-
                 }
 
 
@@ -441,8 +413,6 @@ wss.on("connection", ws =>
                     type:"attach",
                     username:data.username
                 });
-
-
 
 
 
@@ -495,8 +465,7 @@ wss.on("connection", ws =>
 
 
 
-
-    ws.on("close",() =>
+    ws.on("close", () =>
     {
 
         adminClients =
@@ -508,9 +477,7 @@ wss.on("connection", ws =>
     });
 
 
-
 });
-
 
 
 
@@ -522,10 +489,8 @@ wss.on("connection", ws =>
 // STATUS ROBLOX
 // ==========================
 
-
 function sendRobloxStatus()
 {
-
 
     let connected =
         Object.keys(
@@ -545,7 +510,6 @@ function sendRobloxStatus()
     adminClients.forEach(client =>
     {
 
-
         if(
             client.readyState === WebSocket.OPEN
         )
@@ -560,7 +524,6 @@ function sendRobloxStatus()
 
     });
 
-
 }
 
 
@@ -569,15 +532,12 @@ function sendRobloxStatus()
 
 
 
-
 // ==========================
-// CLEAN OLD SERVERS
+// NETTOYAGE
 // ==========================
-
 
 setInterval(() =>
 {
-
 
     let now =
         Date.now();
@@ -589,7 +549,6 @@ setInterval(() =>
     )
     {
 
-
         if(
             now -
             robloxServers[id].lastHeartbeat
@@ -598,19 +557,15 @@ setInterval(() =>
         )
         {
 
-
             console.log(
                 "Serveur Roblox supprimé :",
                 id
             );
 
 
-
             delete robloxServers[id];
 
-
         }
-
 
     }
 
@@ -619,9 +574,7 @@ setInterval(() =>
     sendRobloxStatus();
 
 
-
 },10000);
-
 
 
 
@@ -633,8 +586,7 @@ setInterval(() =>
 // START
 // ==========================
 
-
-server.listen(PORT,() =>
+server.listen(PORT, () =>
 {
 
     console.log(
